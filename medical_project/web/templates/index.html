@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医疗 GraphRAG 问答</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-3xl mx-auto p-6">
+        <h1 class="text-2xl font-bold mb-2">🏥 医疗 GraphRAG</h1>
+        <p class="text-gray-400 mb-6">基于 35 万医学三元组的智能问答（测试版）</p>
+        <div id="chat" class="space-y-4 mb-4 h-96 overflow-y-auto"></div>
+        <div class="flex space-x-2">
+            <input id="query" class="flex-1 px-4 py-2 bg-gray-700 rounded border border-gray-600 outline-none" placeholder="输入症状或疾病名称..." onkeydown="if(event.key==='Enter')ask()">
+            <button onclick="ask()" class="px-6 py-2 bg-blue-600 rounded hover:bg-blue-700">发送</button>
+        </div>
+        <p id="status" class="text-gray-500 text-xs mt-2"></p>
+    </div>
+    <script>
+        addMsg('ai', '您好！请输入您的症状或疾病名称，我会基于医学知识图谱为您分析。\\n\\n例如：头痛恶心怎么回事、高血压用什么药');
+
+        async function ask() {
+            const q = document.getElementById('query').value.trim();
+            if (!q) return;
+            document.getElementById('query').value = '';
+            document.getElementById('status').textContent = '检索中...';
+            addMsg('user', q);
+            const resp = await fetch('/api/ask?query=' + encodeURIComponent(q));
+            const data = await resp.json();
+            addMsg('ai', data.answer);
+            const info = '实体: ' + (data.entities || []).join(', ') + ' | 图谱关系: ' + data.relations_count + ' 条';
+            document.getElementById('status').textContent = info;
+        }
+        function addMsg(role, text) {
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'text-right' : 'text-left';
+            div.innerHTML = '<div class="inline-block max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ' +
+                (role === 'user' ? 'bg-blue-600' : 'bg-gray-700') + '">' + text + '</div>';
+            document.getElementById('chat').appendChild(div);
+            div.scrollIntoView();
+        }
+    </script>
+</body>
+</html>
